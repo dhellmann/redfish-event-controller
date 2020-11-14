@@ -219,6 +219,7 @@ func (r *EventSubscriptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, 
 			return ctrl.Result{}, errors.Wrap(err,
 				fmt.Sprintf("failed to remove old subscription %s", candidate.ODataID))
 		}
+		log.Info("removed old subscription", "uri", candidate.ODataID)
 	}
 
 	return ctrl.Result{}, nil
