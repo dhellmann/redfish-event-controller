@@ -50,11 +50,11 @@ type EventSubscriptionSpec struct {
 	// HostRef specifies the host that the subscription is associated
 	// with. Only Name and Namespace are required. The named resource
 	// must be a BareMetalHost.
-	HostRef *corev1.ObjectReference `json:"HostRef,omitempty"`
+	HostRef corev1.ObjectReference `json:"hostRef,required"`
 
 	// DestinationURL defines the endpoint to which event data is
 	// POSTed
-	DestinationURL string `json:"descriptionURL,required"`
+	DestinationURL string `json:"destinationURL,required"`
 
 	// EventTypes are the kinds of events that should trigger
 	// notifications to be sent to this subscription.

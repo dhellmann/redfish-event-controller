@@ -36,7 +36,25 @@ spec:
           spec:
             description: EventSubscriptionSpec defines the desired state of EventSubscription
             properties:
-              HostRef:
+              destinationURL:
+                description: DestinationURL defines the endpoint to which event data
+                  is POSTed
+                type: string
+              eventTypes:
+                description: EventTypes are the kinds of events that should trigger
+                  notifications to be sent to this subscription.
+                items:
+                  description: EventType defines the kinds of events that can trigger
+                    notifications.
+                  enum:
+                  - Alert
+                  - ResourceAdded
+                  - ResourceRemoved
+                  - ResourceUpdated
+                  - StatusChange
+                  type: string
+                type: array
+              hostRef:
                 description: HostRef specifies the host that the subscription is associated
                   with. Only Name and Namespace are required. The named resource must
                   be a BareMetalHost.
@@ -74,24 +92,6 @@ spec:
                     description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
                     type: string
                 type: object
-              descriptionURL:
-                description: DestinationURL defines the endpoint to which event data
-                  is POSTed
-                type: string
-              eventTypes:
-                description: EventTypes are the kinds of events that should trigger
-                  notifications to be sent to this subscription.
-                items:
-                  description: EventType defines the kinds of events that can trigger
-                    notifications.
-                  enum:
-                  - Alert
-                  - ResourceAdded
-                  - ResourceRemoved
-                  - ResourceUpdated
-                  - StatusChange
-                  type: string
-                type: array
               httpHeaders:
                 description: HTTPHeaders are passed in the POST request to the DestinationURL.
                 items:
@@ -108,7 +108,8 @@ spec:
                   type: object
                 type: array
             required:
-            - descriptionURL
+            - destinationURL
+            - hostRef
             type: object
           status:
             description: EventSubscriptionStatus defines the observed state of EventSubscription
