@@ -36,13 +36,94 @@ spec:
           spec:
             description: EventSubscriptionSpec defines the desired state of EventSubscription
             properties:
-              foo:
-                description: Foo is an example field of EventSubscription. Edit EventSubscription_types.go
-                  to remove/update
+              HostRef:
+                description: HostRef specifies the host that the subscription is associated
+                  with. Only Name and Namespace are required. The named resource must
+                  be a BareMetalHost.
+                properties:
+                  apiVersion:
+                    description: API version of the referent.
+                    type: string
+                  fieldPath:
+                    description: 'If referring to a piece of an object instead of
+                      an entire object, this string should contain a valid JSON/Go
+                      field access statement, such as desiredState.manifest.containers[2].
+                      For example, if the object reference is to a container within
+                      a pod, this would take on a value like: "spec.containers{name}"
+                      (where "name" refers to the name of the container that triggered
+                      the event) or if no container name is specified "spec.containers[2]"
+                      (container with index 2 in this pod). This syntax is chosen
+                      only to have some well-defined way of referencing a part of
+                      an object. TODO: this design is not final and this field is
+                      subject to change in the future.'
+                    type: string
+                  kind:
+                    description: 'Kind of the referent. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#types-kinds'
+                    type: string
+                  name:
+                    description: 'Name of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names'
+                    type: string
+                  namespace:
+                    description: 'Namespace of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/namespaces/'
+                    type: string
+                  resourceVersion:
+                    description: 'Specific resourceVersion to which this reference
+                      is made, if any. More info: https://git.k8s.io/community/contributors/devel/sig-architecture/api-conventions.md#concurrency-control-and-consistency'
+                    type: string
+                  uid:
+                    description: 'UID of the referent. More info: https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#uids'
+                    type: string
+                type: object
+              descriptionURL:
+                description: DestinationURL defines the endpoint to which event data
+                  is POSTed
                 type: string
+              eventTypes:
+                description: EventTypes are the kinds of events that should trigger
+                  notifications to be sent to this subscription.
+                items:
+                  description: EventType defines the kinds of events that can trigger
+                    notifications.
+                  enum:
+                  - Alert
+                  - ResourceAdded
+                  - ResourceRemoved
+                  - ResourceUpdated
+                  - StatusChange
+                  type: string
+                type: array
+              httpHeaders:
+                description: HTTPHeaders are passed in the POST request to the DestinationURL.
+                items:
+                  description: HTTPHeader defines one header value for the HTTP request
+                    to the callback webhook.
+                  properties:
+                    name:
+                      type: string
+                    value:
+                      type: string
+                  required:
+                  - name
+                  - value
+                  type: object
+                type: array
+            required:
+            - descriptionURL
             type: object
           status:
             description: EventSubscriptionStatus defines the observed state of EventSubscription
+            properties:
+              errorMessage:
+                description: ErrorMessage holds any error encountered when registering
+                  the subscription
+                type: string
+              odataID:
+                description: ODataID is taken from the `@odata.id` value of a successful
+                  subscription
+                type: string
+            required:
+            - errorMessage
+            - odataID
             type: object
         type: object
     served: true
