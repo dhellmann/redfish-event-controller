@@ -23,6 +23,7 @@ manager: generate fmt vet
 
 # Run against the configured Kubernetes cluster in ~/.kube/config
 run: generate fmt vet manifests
+	kubectl apply -f ./config/crd/bases/redfish.metal3.io_eventsubscriptions.yaml
 	go run ./main.go
 
 # Install CRDs into a cluster
