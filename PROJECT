@@ -1,0 +1,3 @@
+domain: my.domain
+repo: github.com/metal3-io/redfish-event-controller
+version: "2"
