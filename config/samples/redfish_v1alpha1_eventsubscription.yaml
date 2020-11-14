@@ -1,0 +1,7 @@
+apiVersion: redfish.metal3.io/v1alpha1
+kind: EventSubscription
+metadata:
+  name: eventsubscription-sample
+spec:
+  # Add fields here
+  foo: bar

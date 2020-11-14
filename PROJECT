@@ -1,4 +1,8 @@
 domain: metal3.io
-repo: github.com/metal3-io/redfish-event-controller
-version: "2"
 multigroup: true
+repo: github.com/metal3-io/redfish-event-controller
+resources:
+- group: redfish
+  kind: EventSubscription
+  version: v1alpha1
+version: "2"
