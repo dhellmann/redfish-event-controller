@@ -67,6 +67,23 @@ func (r *EventSubscriptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, 
 		return ctrl.Result{}, errors.Wrap(err, "could not load subscription data")
 	}
 
+	subscription.Status.ErrorMessage = ""
+	err = r.reconcile(req, subscription)
+	if err != nil && subscription.Status.ErrorMessage == "" {
+		subscription.Status.ErrorMessage = err.Error()
+	}
+
+	err2 := r.Status().Update(context.TODO(), subscription)
+	if err2 != nil {
+		return ctrl.Result{}, errors.Wrap(err2, "failed to update status")
+	}
+
+	return ctrl.Result{}, err
+}
+
+func (r *EventSubscriptionReconciler) reconcile(req ctrl.Request, subscription *redfishv1alpha1.EventSubscription) (err error) {
+	log := r.Log.WithValues("eventsubscription", req.NamespacedName)
+
 	hostKey := client.ObjectKey{
 		Name:      subscription.Spec.HostRef.Name,
 		Namespace: subscription.Spec.HostRef.Namespace,
@@ -79,13 +96,7 @@ func (r *EventSubscriptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, 
 	host := &bmh.BareMetalHost{}
 	err = r.Get(context.TODO(), hostKey, host)
 	if err != nil {
-		if apierrors.IsNotFound(err) {
-			log.Info("failed to load host", "host", hostKey)
-			msg := fmt.Sprintf("could not load host %s", hostKey)
-			err := r.setErrorMessage(subscription, msg)
-			return ctrl.Result{}, err
-		}
-		return ctrl.Result{}, errors.Wrap(err, "could not load subscription data")
+		return errors.Wrap(err, "could not load host for subscription")
 	}
 
 	// TODO: add finalizer to the host and handle deleting the subscription
@@ -93,27 +104,27 @@ func (r *EventSubscriptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, 
 	log.Info("verifying BMC access", "address", host.Spec.BMC.Address)
 	if host.Spec.BMC.Address == "" {
 		err := fmt.Errorf("host %s/%s has no BMC address", host.Namespace, host.Name)
-		return ctrl.Result{}, err
+		return err
 	}
 	accessDetails, err := bmc.NewAccessDetails(
 		host.Spec.BMC.Address,
 		host.Spec.BMC.DisableCertificateVerification,
 	)
 	if err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "could not understand BMC address: %s")
+		return errors.Wrap(err, "could not understand BMC address: %s")
 	}
 	if !strings.Contains(accessDetails.Type(), "redfish") {
-		return ctrl.Result{}, fmt.Errorf("BMC does not use Redfish protocol")
+		return fmt.Errorf("BMC does not use Redfish protocol")
 	}
 
 	username, password, err := r.getBMCCredentials(req, subscription, host)
 	if err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "could not find credentials for host BMC")
+		return errors.Wrap(err, "could not find credentials for host BMC")
 	}
 
 	parsedURL, err := url.Parse(host.Spec.BMC.Address)
 	if err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "failed to parse BMC address")
+		return errors.Wrap(err, "failed to parse BMC address")
 	}
 	address := getRedfishAddress(parsedURL.Scheme, parsedURL.Host)
 	log.Info("connecting to BMC", "address", address)
@@ -126,12 +137,12 @@ func (r *EventSubscriptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, 
 	}
 	conn, err := gofish.Connect(gofishConfig)
 	if err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "could not connect to BMC")
+		return errors.Wrap(err, "could not connect to BMC")
 	}
 
 	eventService, err := conn.Service.EventService()
 	if err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "could not access event service on BMC")
+		return errors.Wrap(err, "could not access event service on BMC")
 	}
 
 	// The Redfish API does not return all of the details passed when
@@ -150,7 +161,7 @@ func (r *EventSubscriptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, 
 	var existingSub *redfish.EventDestination
 	existingSubscriptions, err := eventService.GetEventSubscriptions()
 	if err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "could not access existing subscriptions")
+		return errors.Wrap(err, "could not access existing subscriptions")
 	}
 	log.Info("looking for existing subscription",
 		"key", contextPrefix,
@@ -165,12 +176,7 @@ func (r *EventSubscriptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, 
 	if existingSub != nil && existingSub.Context == expectedContext {
 		log.Info("existing subscription matches signature", "uri", existingSub.ODataID)
 		subscription.Status.ODataID = existingSub.ODataID
-		subscription.Status.ErrorMessage = ""
-		err := r.Status().Update(context.TODO(), subscription)
-		if err != nil {
-			return ctrl.Result{}, errors.Wrap(err, "failed to update subscription status")
-		}
-		return ctrl.Result{}, nil
+		return nil
 	}
 
 	// create the new subscription
@@ -186,6 +192,7 @@ func (r *EventSubscriptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, 
 	for k := range httpHeaders {
 		headers[k] = httpHeaders.Get(k)
 	}
+	log.Info("creating subscription", "headers", headers)
 	subscriptionURI, err := eventService.CreateEventSubscription(
 		subscription.Spec.DestinationURL,
 		eventTypes,
@@ -196,10 +203,6 @@ func (r *EventSubscriptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, 
 	)
 	log.Info("created new subscription", "uri", subscriptionURI)
 	subscription.Status.ODataID = subscriptionURI
-	err = r.Status().Update(context.TODO(), subscription)
-	if err != nil {
-		return ctrl.Result{}, errors.Wrap(err, "could not update status after creating subscription")
-	}
 
 	// The API for subscriptions does not allow changes, so we have
 	// already made a new subscription. Now we delete the existing
@@ -216,13 +219,13 @@ func (r *EventSubscriptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, 
 		}
 		err := eventService.DeleteEventSubscription(candidate.ODataID)
 		if err != nil {
-			return ctrl.Result{}, errors.Wrap(err,
+			return errors.Wrap(err,
 				fmt.Sprintf("failed to remove old subscription %s", candidate.ODataID))
 		}
 		log.Info("removed old subscription", "uri", candidate.ODataID)
 	}
 
-	return ctrl.Result{}, nil
+	return nil
 }
 
 func getHeadersForSubscription(subscription *redfishv1alpha1.EventSubscription) http.Header {
@@ -268,19 +271,6 @@ func getRedfishAddress(bmcType, host string) string {
 	redfishAddress = append(redfishAddress, "://")
 	redfishAddress = append(redfishAddress, host)
 	return strings.Join(redfishAddress, "")
-}
-
-func (r *EventSubscriptionReconciler) setErrorMessage(subscription *redfishv1alpha1.EventSubscription, message string) error {
-	if subscription.Status.ErrorMessage == message {
-		// we've already recorded this error
-		return nil
-	}
-	subscription.Status.ErrorMessage = message
-	err := r.Status().Update(context.TODO(), subscription)
-	if err != nil {
-		return errors.Wrap(err, "failed to update status")
-	}
-	return nil
 }
 
 func (r *EventSubscriptionReconciler) getBMCCredentials(req ctrl.Request, subscription *redfishv1alpha1.EventSubscription, host *bmh.BareMetalHost) (username, password string, err error) {

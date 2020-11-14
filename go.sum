@@ -566,8 +566,6 @@ github.com/spf13/viper v1.4.0/go.mod h1:PTJ7Z/lr49W6bUbkmS1V3by4uWynFiR9p7+dSq/y
 github.com/spf13/viper v1.7.0/go.mod h1:8WkrPz2fc9jxqZNCJI/76HCieCp4Q8HaLFoCha5qpdg=
 github.com/spf13/viper v1.7.1/go.mod h1:8WkrPz2fc9jxqZNCJI/76HCieCp4Q8HaLFoCha5qpdg=
 github.com/ssgreg/nlreturn/v2 v2.1.0/go.mod h1:E/iiPB78hV7Szg2YfRgyIrk1AD6JVMTRkkxBiELzh2I=
-github.com/stmcginnis/gofish v0.6.0 h1:ZTMR0pNO/cBUEvsUOfY0cK0eqRR2Fb1y9B9U7sEwcK8=
-github.com/stmcginnis/gofish v0.6.0/go.mod h1:t0RUeoOLznx9vExQOeLZUrjU0u3yy0wL4iVMQviUl+k=
 github.com/stmcginnis/gofish v0.6.1-0.20201113210323-e8ea71f4ccbe h1:f4n12YTvG+lXfSQYnlO1gw3sp+jLv3ei3wrQpR5fcDM=
 github.com/stmcginnis/gofish v0.6.1-0.20201113210323-e8ea71f4ccbe/go.mod h1:t0RUeoOLznx9vExQOeLZUrjU0u3yy0wL4iVMQviUl+k=
 github.com/stretchr/objx v0.1.0/go.mod h1:HFkY916IF+rwdDfMAkV7OtwuqBVzrE8GR6GFx+wExME=
