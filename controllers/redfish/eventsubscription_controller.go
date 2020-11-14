@@ -144,7 +144,8 @@ func (r *EventSubscriptionReconciler) Reconcile(req ctrl.Request) (ctrl.Result, 
 	// matching UID in our status field in case we successfully
 	// created the subscription but failed to record its ID.
 	signature := getSignatureForSubscription(subscription)
-	contextPrefix := fmt.Sprintf("metal3:%s", subscription.UID)
+	contextPrefix := fmt.Sprintf("metal3:%s:%s/%s",
+		subscription.UID, subscription.Namespace, subscription.Name)
 	expectedContext := fmt.Sprintf("%s:%s", contextPrefix, signature)
 	var existingSub *redfish.EventDestination
 	existingSubscriptions, err := eventService.GetEventSubscriptions()
