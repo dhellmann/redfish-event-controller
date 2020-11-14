@@ -79,6 +79,7 @@ type EventSubscriptionStatus struct {
 // +kubebuilder:object:root=true
 
 // EventSubscription is the Schema for the eventsubscriptions API
+// +kubebuilder:subresource:status
 type EventSubscription struct {
 	metav1.TypeMeta   `json:",inline"`
 	metav1.ObjectMeta `json:"metadata,omitempty"`
