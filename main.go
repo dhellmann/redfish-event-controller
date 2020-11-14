@@ -26,6 +26,8 @@ import (
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/log/zap"
 
+	bmhapi "github.com/metal3-io/baremetal-operator/apis/metal3.io/v1alpha1"
+
 	redfishv1alpha1 "github.com/metal3-io/redfish-event-controller/apis/redfish/v1alpha1"
 	redfishcontroller "github.com/metal3-io/redfish-event-controller/controllers/redfish"
 	// +kubebuilder:scaffold:imports
@@ -40,6 +42,7 @@ func init() {
 	_ = clientgoscheme.AddToScheme(scheme)
 
 	_ = redfishv1alpha1.AddToScheme(scheme)
+	_ = bmhapi.AddToScheme(scheme)
 	// +kubebuilder:scaffold:scheme
 }
 
