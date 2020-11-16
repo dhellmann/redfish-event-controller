@@ -179,7 +179,16 @@ func (r *EventSubscriptionReconciler) reconcile(req ctrl.Request, subscription *
 		return nil
 	}
 
-	// create the new subscription
+	// We create a new subscription for 2 reasons: There was no
+	// existing subscription, or the existing subscription does not
+	// match our current settings.
+	//
+	// The API for subscriptions does not allow changes, so if we
+	// found an existing subscription that no longer matches we have
+	// to make a new subscription and remove the old one. We create
+	// the new subscription first so there is no gap in the
+	// subscription and we won't lose any events.
+
 	eventTypes := []redfish.EventType{}
 	for _, et := range subscription.Spec.EventTypes {
 		eventTypes = append(eventTypes, redfish.EventType(et))
@@ -204,9 +213,7 @@ func (r *EventSubscriptionReconciler) reconcile(req ctrl.Request, subscription *
 	log.Info("created new subscription", "uri", subscriptionURI)
 	subscription.Status.ODataID = subscriptionURI
 
-	// The API for subscriptions does not allow changes, so we have
-	// already made a new subscription. Now we delete the existing
-	// subscription, since we won't miss any events. We do this in a
+	// Now we can safely delete an old subscription. We do this in a
 	// somewhat brute-force way, because if we encountered an error
 	// previously when we tried to update the status we could have an
 	// extra subscription.
